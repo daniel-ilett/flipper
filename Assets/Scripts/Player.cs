@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+
 using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody))]
 public class Player : MonoBehaviour
@@ -23,9 +25,29 @@ public class Player : MonoBehaviour
 	private float startSpeed = 5.0f;
 	private float moveSpeed = 5.0f;
 
+	private bool canControl = false;
+
+	// Game references.
+	private Level level;
+
 	// Raycasting variables.
 	[SerializeField]
 	private LayerMask mask;
+
+	// Bomb properties.
+	[SerializeField]
+	private GameObject bomb;
+
+	[SerializeField]
+	private Text readyText;
+	[SerializeField]
+	private Image readyImage;
+
+	private bool canBomb = true;
+
+	// Blob shadow references.
+	[SerializeField]
+	private GameObject blobShadow;
 
 	// References.
 	private new Rigidbody rigidbody;
@@ -75,15 +97,39 @@ public class Player : MonoBehaviour
 		rigidbody = GetComponent<Rigidbody>();
 	}
 
+	public void SetLevel(Level level)
+	{
+		this.level = level;
+	}
+
+	public void ChangeControl(bool canControl)
+	{
+		this.canControl = canControl;
+	}
+
 	private void Update ()
 	{
-		Vector3 movement = new Vector3(Input.GetAxis(xAxis), 0.0f, 
+		if(canControl)
+		{
+			Vector3 movement = new Vector3(Input.GetAxis(xAxis), 0.0f,
 			Input.GetAxis(zAxis)) * Time.deltaTime * moveSpeed;
-		
-		transform.Translate(movement);
 
-		if (Input.GetButtonDown(jump))
-			rigidbody.AddForce(Vector3.up * 15.0f, ForceMode.Impulse);
+			transform.Translate(movement);
+
+			if (Input.GetButtonDown(jump))
+				rigidbody.AddForce(Vector3.up * 15.0f, ForceMode.Impulse);
+
+			if (Input.GetButtonDown(use))
+			{
+				if(canBomb)
+				{
+					Instantiate(bomb, transform.position + new Vector3(0.0f, 2.0f, 0.0f), Quaternion.identity);
+
+					canBomb = false;
+					StartCoroutine(BombCooldown());
+				}
+			}
+		}
 
 		RaycastHit[] hits;
 		hits = Physics.BoxCastAll(transform.position, new Vector3(0.2f, 0.2f, 0.2f), -Vector3.up, Quaternion.identity, 0.4f, mask);
@@ -95,5 +141,50 @@ public class Player : MonoBehaviour
 			if(tile != null)
 				tile.SetColour(playerID);
 		}
+	}
+
+	private IEnumerator BombCooldown()
+	{
+		readyImage.fillAmount = 0.0f;
+		readyText.text = "Recharging...";
+		for (float t = 0; t < 2.5f; t += Time.deltaTime)
+		{
+			readyImage.fillAmount = t / 2.5f;
+			yield return new WaitForEndOfFrame();
+		}
+
+		readyImage.fillAmount = 1.0f;
+		readyText.text = "Ready!";
+
+		canBomb = true;
+	}
+
+	public void HitWithExplosion(Vector3 origin, float force, float size)
+	{
+		blobShadow.SetActive(false);
+
+		gameObject.layer = 12;
+
+		rigidbody.constraints = RigidbodyConstraints.None;
+		rigidbody.AddExplosionForce(force * 5.0f, origin, size, 1.0f, ForceMode.Impulse);
+
+		if(canControl)
+			level.PlayerDead(this);
+
+		canControl = false;
+	}
+
+	private void OnTriggerEnter(Collider other)
+	{
+		if(other.tag == "Destructor")
+		{
+			canControl = false;
+			level.PlayerDead(this);
+		}
+	}
+
+	public int GetPlayerID()
+	{
+		return playerID;
 	}
 }

@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: d9e4891d1ead8c643b4dbc2d7f3cb412
+timeCreated: 1508413440
+licenseType: Free
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Loew
+  fontNames:
+  - Loew
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
